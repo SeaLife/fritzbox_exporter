@@ -4,9 +4,3 @@ include:
 variables:
   DOCKER_IMAGE_NAME: fritzbox-exporter
   DOCKER_NAMESPACE: sealife
-
-img build:
-  image: sealife/img:develop
-  stage: docker
-  script:
-    - img build --platform linux/arm64 --platform linux/amd64 -t $CI_REGISTRY_IMAGE:$CI_COMMIT_SHORT_SHA .
