@@ -16,7 +16,10 @@ A requirements.txt file is included with the source. Install the requirements us
 This exporter can directly be run from a shell. Set the environment vars as describe in the configuration section of this README and run "python3 -m fritzbox_exporter" from the code directory. PRs for systemd unit files will gladly be accepted ;-)
 
 ### Docker
-The recommended way to run this exporter is from a docker container. The included Dockerfile will build the exporter using an python:alpine container using python3.
+The recommended way to run this exporter is from a docker container.
+The included Dockerfile will build the exporter using an python:alpine container using python3.
+
+There are also pre-built images ready at: [sealife/fritzbox-exporter](https://hub.docker.com/repository/docker/sealife/fritzbox-exporter)
 
 To build execute
 
@@ -55,6 +58,23 @@ Configuration is done completely via environment vars.
 | FRITZ_USER   | Username for authentication | none |
 | FRITZ_PASS   | Password for authentication | none |
 | FRITZ_EXPORTER_PORT | Listening port for the exporter | 8765 |
+
+You can also bind-mount a `settings.json` at `/app/settings.json` to configure multiple Fritz!Box's at once:
+
+```json
+[
+  {
+    "host": "fritz.box",
+    "username": "prometheus",
+    "password": "prometheus"
+  },
+  {
+    "host": "192.168.178.20",
+    "username": "prometheus",
+    "password": "prometheus"
+  }
+]
+```
 
 ## Copyright
 
