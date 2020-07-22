@@ -149,11 +149,11 @@ def get_configuration():
             if type(configuration) is list:
                 for entry in configuration:
                     if 'host' in entry and 'username' in entry and 'password' in entry:
-                        collectors.insert(
+                        collectors.append(
                             FritzBoxCollector(entry['host'], entry['username'], entry['password']))
 
     if os.getenv('FRITZ_USER') is not None and os.getenv('FRITZ_PASS') is not None:
-        collectors.insert(
+        collectors.append(
             FritzBoxCollector(os.getenv('FRITZ_HOST', 'fritz.box'), os.getenv('FRITZ_USER'), os.getenv('FRITZ_PASS')))
 
     return collectors
