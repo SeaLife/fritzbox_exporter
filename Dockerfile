@@ -15,5 +15,8 @@ WORKDIR /app
 ADD requirements.txt /app/requirements.txt
 RUN python3 -m pip --no-cache-dir install -r requirements.txt
 
+## add application
+ADD . /app
+
 ## cmd
 CMD ["python3", "-m", "fritzbox_exporter"]
