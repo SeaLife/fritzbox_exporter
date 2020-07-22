@@ -9,4 +9,4 @@ img build:
   image: sealife/img:develop
   stage: docker
   script:
-    - img build --platform linux/arm64 --platform linux/amd64 --platform darwin/amd64 -t $CI_REGISTRY_IMAGE:$CI_COMMIT_SHORT_SHA .
+    - img build --platform linux/arm64 --platform linux/amd64 -t $CI_REGISTRY_IMAGE:$CI_COMMIT_SHORT_SHA .
