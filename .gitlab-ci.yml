@@ -1,0 +1,7 @@
+include:
+  - remote: 'https://git.virtuellewolke.org/generic/ci-templates/raw/master/docker-img.gitlab-ci.yml'
+
+variables:
+  DOCKER_IMAGE_NAME: fritzbox-exporter
+  DOCKER_NAMESPACE: sealife
+

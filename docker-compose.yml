@@ -6,3 +6,7 @@ services:
     build: .
     ports:
       - 8765:8765
+    environment:
+      FRITZ_HOST: fritz.box
+      FRITZ_USER: prometheus # needs to be changed
+      FRITZ_PASS: prometheus # needs to be changed

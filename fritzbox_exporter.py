@@ -12,13 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import os
+import time
+import json
 import fritzconnection as fc
-import time, os
+import prometheus_client
 from prometheus_client.core import GaugeMetricFamily, CounterMetricFamily, REGISTRY
-from prometheus_client import start_http_server
 
-#for key in info_result:
-#    print(f'{key}: {info_result[key]}')
 
 class FritzBoxCollector(object):
     def __init__(self, host, user, passwd):
@@ -29,20 +29,26 @@ class FritzBoxCollector(object):
 
     def collect(self):
         info_result = self.conn.call_action('DeviceInfo:1', 'GetInfo')
-        fritzbox_uptime = CounterMetricFamily('fritzbox_uptime', 'FritzBox uptime, system info in labels', labels=['ModelName', 'SoftwareVersion', 'Serial'])
-        fritzbox_uptime.add_metric([info_result['NewModelName'], info_result['NewSoftwareVersion'], info_result['NewSerialNumber']], info_result['NewUpTime'])
+        fritzbox_uptime = CounterMetricFamily('fritzbox_uptime', 'FritzBox uptime, system info in labels',
+                                              labels=['ModelName', 'SoftwareVersion', 'Serial'])
+        fritzbox_uptime.add_metric(
+            [info_result['NewModelName'], info_result['NewSoftwareVersion'], info_result['NewSerialNumber']],
+            info_result['NewUpTime'])
         fb_serial = info_result['NewSerialNumber']
         yield fritzbox_uptime
 
         update_result = self.conn.call_action('UserInterface:1', 'GetInfo')
-        fritzbox_update = GaugeMetricFamily('fritzbox_update_available', 'FritzBox update available', labels=['Serial', 'NewSoftwareVersion'])
+        fritzbox_update = GaugeMetricFamily('fritzbox_update_available', 'FritzBox update available',
+                                            labels=['Serial', 'NewSoftwareVersion'])
         upd_available = 1 if update_result['NewUpgradeAvailable'] == '1' else 0
-        new_software_version = "n/a" if update_result['NewX_AVM-DE_Version'] is None else update_result['NewX_AVM-DE_Version']
+        new_software_version = "n/a" if update_result['NewX_AVM-DE_Version'] is None else update_result[
+            'NewX_AVM-DE_Version']
         fritzbox_update.add_metric([fb_serial, new_software_version], upd_available)
         yield fritzbox_update
 
         lanstatus_result = self.conn.call_action('LANEthernetInterfaceConfig:1', 'GetInfo')
-        fritzbox_lanenable = GaugeMetricFamily('fritzbox_lan_status_enabled', 'LAN Interface enabled', labels=['Serial'])
+        fritzbox_lanenable = GaugeMetricFamily('fritzbox_lan_status_enabled', 'LAN Interface enabled',
+                                               labels=['Serial'])
         fritzbox_lanenable.add_metric([fb_serial], lanstatus_result['NewEnable'])
         yield fritzbox_lanenable
 
@@ -53,9 +59,12 @@ class FritzBoxCollector(object):
 
         lanstats_result = self.conn.call_action('LANEthernetInterfaceConfig:1', 'GetStatistics')
         fritzbox_lan_brx = CounterMetricFamily('fritzbox_lan_received_bytes', 'LAN bytes received', labels=['Serial'])
-        fritzbox_lan_btx = CounterMetricFamily('fritzbox_lan_transmitted_bytes', 'LAN bytes transmitted', labels=['Serial'])
-        fritzbox_lan_prx = CounterMetricFamily('fritzbox_lan_received_packets_total', 'LAN packets received', labels=['Serial'])
-        fritzbox_lan_ptx = CounterMetricFamily('fritzbox_lan_transmitted_packets_total', 'LAN packets transmitted', labels=['Serial'])
+        fritzbox_lan_btx = CounterMetricFamily('fritzbox_lan_transmitted_bytes', 'LAN bytes transmitted',
+                                               labels=['Serial'])
+        fritzbox_lan_prx = CounterMetricFamily('fritzbox_lan_received_packets_total', 'LAN packets received',
+                                               labels=['Serial'])
+        fritzbox_lan_ptx = CounterMetricFamily('fritzbox_lan_transmitted_packets_total', 'LAN packets transmitted',
+                                               labels=['Serial'])
         fritzbox_lan_brx.add_metric([fb_serial], lanstats_result['NewBytesReceived'])
         fritzbox_lan_btx.add_metric([fb_serial], lanstats_result['NewBytesSent'])
         fritzbox_lan_prx.add_metric([fb_serial], lanstats_result['NewPacketsReceived'])
@@ -74,54 +83,90 @@ class FritzBoxCollector(object):
         yield fritzbox_dsl_enable
         yield fritzbox_dsl_status
 
-        fritzbox_dsl_datarate = GaugeMetricFamily('fritzbox_dsl_datarate_kbps', 'DSL datarate in kbps', labels= ['Serial', 'Direction', 'Type'])
+        fritzbox_dsl_datarate = GaugeMetricFamily('fritzbox_dsl_datarate_kbps', 'DSL datarate in kbps',
+                                                  labels=['Serial', 'Direction', 'Type'])
         fritzbox_dsl_datarate.add_metric([fb_serial, 'up', 'curr'], fritzbox_dslinfo_result['NewUpstreamCurrRate'])
-        fritzbox_dsl_datarate.add_metric([fb_serial, 'down','curr'], fritzbox_dslinfo_result['NewDownstreamCurrRate'])
+        fritzbox_dsl_datarate.add_metric([fb_serial, 'down', 'curr'], fritzbox_dslinfo_result['NewDownstreamCurrRate'])
         fritzbox_dsl_datarate.add_metric([fb_serial, 'up', 'max'], fritzbox_dslinfo_result['NewUpstreamMaxRate'])
-        fritzbox_dsl_datarate.add_metric([fb_serial, 'down','max'], fritzbox_dslinfo_result['NewDownstreamMaxRate'])
+        fritzbox_dsl_datarate.add_metric([fb_serial, 'down', 'max'], fritzbox_dslinfo_result['NewDownstreamMaxRate'])
         yield fritzbox_dsl_datarate
 
-        fritzbox_dsl_noisemargin = GaugeMetricFamily('fritzbox_dsl_noise_margin_dB', 'Noise Margin in dB', labels=['Serial', 'Direction'])
-        fritzbox_dsl_noisemargin.add_metric([fb_serial, 'up'], fritzbox_dslinfo_result['NewUpstreamNoiseMargin']/10)
-        fritzbox_dsl_noisemargin.add_metric([fb_serial, 'down'], fritzbox_dslinfo_result['NewDownstreamNoiseMargin']/10)
+        fritzbox_dsl_noisemargin = GaugeMetricFamily('fritzbox_dsl_noise_margin_dB', 'Noise Margin in dB',
+                                                     labels=['Serial', 'Direction'])
+        fritzbox_dsl_noisemargin.add_metric([fb_serial, 'up'], fritzbox_dslinfo_result['NewUpstreamNoiseMargin'] / 10)
+        fritzbox_dsl_noisemargin.add_metric([fb_serial, 'down'],
+                                            fritzbox_dslinfo_result['NewDownstreamNoiseMargin'] / 10)
         yield fritzbox_dsl_noisemargin
 
-        fritzbox_dsl_attenuation = GaugeMetricFamily('fritzbox_dsl_attenuation_dB', 'Line attenuation in dB', labels=['Serial', 'Direction'])
-        fritzbox_dsl_attenuation.add_metric([fb_serial, 'up'], fritzbox_dslinfo_result['NewUpstreamAttenuation']/10)
-        fritzbox_dsl_attenuation.add_metric([fb_serial, 'down'], fritzbox_dslinfo_result['NewDownstreamAttenuation']/10)
+        fritzbox_dsl_attenuation = GaugeMetricFamily('fritzbox_dsl_attenuation_dB', 'Line attenuation in dB',
+                                                     labels=['Serial', 'Direction'])
+        fritzbox_dsl_attenuation.add_metric([fb_serial, 'up'], fritzbox_dslinfo_result['NewUpstreamAttenuation'] / 10)
+        fritzbox_dsl_attenuation.add_metric([fb_serial, 'down'],
+                                            fritzbox_dslinfo_result['NewDownstreamAttenuation'] / 10)
         yield fritzbox_dsl_attenuation
 
         fritzbox_pppstatus_result = self.conn.call_action('WANPPPConnection:1', 'GetStatusInfo')
         pppconnected = 1 if fritzbox_pppstatus_result['NewConnectionStatus'] == 'Connected' else 0
-        fritzbox_ppp_uptime = GaugeMetricFamily('fritzbox_ppp_connection_uptime', 'PPP connection uptime', labels=['Serial'])
+        fritzbox_ppp_uptime = GaugeMetricFamily('fritzbox_ppp_connection_uptime', 'PPP connection uptime',
+                                                labels=['Serial'])
         fritzbox_ppp_uptime.add_metric([fb_serial], fritzbox_pppstatus_result['NewUptime'])
-        fritzbox_ppp_connected = GaugeMetricFamily('fritzbox_ppp_conection_state', 'PPP connection state', labels=['Serial', 'last_error'])
-        fritzbox_ppp_connected.add_metric([fb_serial, fritzbox_pppstatus_result['NewLastConnectionError']], pppconnected)
+        fritzbox_ppp_connected = GaugeMetricFamily('fritzbox_ppp_conection_state', 'PPP connection state',
+                                                   labels=['Serial', 'last_error'])
+        fritzbox_ppp_connected.add_metric([fb_serial, fritzbox_pppstatus_result['NewLastConnectionError']],
+                                          pppconnected)
         yield fritzbox_ppp_uptime
         yield fritzbox_ppp_connected
 
-        fritzbox_wan_result = self.conn.call_action('WANCommonInterfaceConfig:1', 'GetTotalBytesReceived')
-        wan_bytes_rx = fritzbox_wan_result['NewTotalBytesReceived']
-        fritzbox_wan_result = self.conn.call_action('WANCommonInterfaceConfig:1', 'GetTotalBytesSent')
-        wan_bytes_tx = fritzbox_wan_result['NewTotalBytesSent']
+        fritzbox_wan_result = self.conn.call_action('WANCommonIFC1', 'GetAddonInfos')
+        wan_bytes_rx = fritzbox_wan_result['NewX_AVM_DE_TotalBytesReceived64']
+        wan_bytes_tx = fritzbox_wan_result['NewX_AVM_DE_TotalBytesSent64']
+
         fritzbox_wan_result = self.conn.call_action('WANCommonInterfaceConfig:1', 'GetTotalPacketsReceived')
         wan_packets_rx = fritzbox_wan_result['NewTotalPacketsReceived']
         fritzbox_wan_result = self.conn.call_action('WANCommonInterfaceConfig:1', 'GetTotalPacketsSent')
         wan_packets_tx = fritzbox_wan_result['NewTotalPacketsSent']
-        
-        fritzbox_wan_data = CounterMetricFamily('fritzbox_wan_data_bytes', 'WAN data in bytes', labels=['Serial', 'Direction'])
+
+        fritzbox_wan_data = CounterMetricFamily('fritzbox_wan_data_bytes', 'WAN data in bytes',
+                                                labels=['Serial', 'Direction'])
         fritzbox_wan_data.add_metric([fb_serial, 'up'], wan_bytes_tx)
         fritzbox_wan_data.add_metric([fb_serial, 'down'], wan_bytes_rx)
-        fritzbox_wan_packets = CounterMetricFamily('fritzbox_wan_data_packets', 'WAN data in packets', labels=['Serial', 'Direction'])
+        fritzbox_wan_packets = CounterMetricFamily('fritzbox_wan_data_packets', 'WAN data in packets',
+                                                   labels=['Serial', 'Direction'])
         fritzbox_wan_packets.add_metric([fb_serial, 'up'], wan_packets_tx)
         fritzbox_wan_packets.add_metric([fb_serial, 'down'], wan_packets_rx)
         yield fritzbox_wan_data
         yield fritzbox_wan_packets
 
+
+def get_configuration():
+    collectors = list()
+
+    if os.path.exists('settings.json'):
+        with open('settings.json', 'r') as fh:
+            configuration = json.loads(fh.read())
+
+        if configuration is not None:
+            if type(configuration) is list:
+                for entry in configuration:
+                    if 'host' in entry and 'username' in entry and 'password' in entry:
+                        collectors.insert(
+                            FritzBoxCollector(entry['host'], entry['username'], entry['password']))
+
+    if os.getenv('FRITZ_USER') is not None and os.getenv('FRITZ_PASS') is not None:
+        collectors.insert(
+            FritzBoxCollector(os.getenv('FRITZ_HOST', 'fritz.box'), os.getenv('FRITZ_USER'), os.getenv('FRITZ_PASS')))
+
+    return collectors
+
+
 if __name__ == '__main__':
 
-    REGISTRY.register(FritzBoxCollector(os.getenv('FRITZ_HOST', 'fritz.box'), os.getenv('FRITZ_USER'), os.getenv('FRITZ_PASS')))
+    for collector in get_configuration():
+        print("Registered collector for FB at: " + collector.host)
+        REGISTRY.register(collector)
+
     # Start up the server to expose the metrics.
-    start_http_server(os.getenv('FRITZ_EXPORTER_PORT', 8765))
-    while(True):
+    print("Starting Server at " + str(os.getenv('FRITZ_EXPORTER_PORT', 8765)))
+    prometheus_client.start_http_server(os.getenv('FRITZ_EXPORTER_PORT', 8765))
+    while True:
         time.sleep(10000)
