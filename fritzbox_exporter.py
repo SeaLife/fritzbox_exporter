@@ -101,93 +101,112 @@ class FritzBoxCollector(object):
         fritzbox_wan_packets = CounterMetricFamily('fritzbox_wan_data_packets', 'WAN data in packets',
                                                    labels=['Serial', 'Direction'])
 
+        fritzbox_fec_errors = GaugeMetricFamily('fritzbox_dsl_errors_fec', 'FEC errors', labels=['Serial'])
+        fritzbox_crc_errors = GaugeMetricFamily('fritzbox_dsl_errors_crc', 'CRC Errors', labels=['Serial'])
+
+        fritzbox_dsl_upstream_power = GaugeMetricFamily('fritzbox_dsl_power_upstream', 'Upstream Power', labels=['Serial'])
+        fritzbox_dsl_downstream_power = GaugeMetricFamily('fritzbox_dsl_power_downstream', 'Downstream Power', labels=['Serial'])
+
         for box in self.boxes:
-            connection = box.conn
-            info_result = connection.call_action('DeviceInfo:1', 'GetInfo')
-            fb_serial = info_result['NewSerialNumber']
+            try:
+                connection = box.conn
+                info_result = connection.call_action('DeviceInfo:1', 'GetInfo')
+                fb_serial = info_result['NewSerialNumber']
 
-            # fritzbox_uptime
-            fritzbox_uptime.add_metric(
-                [info_result['NewModelName'], info_result['NewSoftwareVersion'], fb_serial], info_result['NewUpTime']
-            )
+                # fritzbox_uptime
+                fritzbox_uptime.add_metric(
+                    [info_result['NewModelName'], info_result['NewSoftwareVersion'], fb_serial],
+                    info_result['NewUpTime']
+                )
 
-            # fritzbox_update_available
-            update_result = connection.call_action('UserInterface:1', 'GetInfo')
-            upd_available = 1 if update_result['NewUpgradeAvailable'] == '1' else 0
-            new_software_version = "n/a" if update_result['NewX_AVM-DE_Version'] is None else update_result[
-                'NewX_AVM-DE_Version']
+                # fritzbox_update_available
+                update_result = connection.call_action('UserInterface:1', 'GetInfo')
+                upd_available = 1 if update_result['NewUpgradeAvailable'] == '1' else 0
+                new_software_version = "n/a" if update_result['NewX_AVM-DE_Version'] is None else update_result[
+                    'NewX_AVM-DE_Version']
 
-            fritzbox_update.add_metric([fb_serial, new_software_version], upd_available)
+                fritzbox_update.add_metric([fb_serial, new_software_version], upd_available)
 
-            # fritzbox_lan_status_enabled
-            lanstatus_result = connection.call_action('LANEthernetInterfaceConfig:1', 'GetInfo')
-            fritzbox_lanenable.add_metric([fb_serial], lanstatus_result['NewEnable'])
+                # fritzbox_lan_status_enabled
+                lanstatus_result = connection.call_action('LANEthernetInterfaceConfig:1', 'GetInfo')
+                fritzbox_lanenable.add_metric([fb_serial], lanstatus_result['NewEnable'])
 
-            # fritzbox_lan_status
-            lanstatus = 1 if lanstatus_result['NewStatus'] == 'Up' else 0
-            fritzbox_lanstatus.add_metric([fb_serial], lanstatus)
+                # fritzbox_lan_status
+                lanstatus = 1 if lanstatus_result['NewStatus'] == 'Up' else 0
+                fritzbox_lanstatus.add_metric([fb_serial], lanstatus)
 
-            # fritzbox_lan_received_bytes
-            # fritzbox_lan_transmitted_bytes
-            # fritzbox_lan_received_packets_total
-            # fritzbox_lan_transmitted_packets_total
-            lanstats_result = connection.call_action('LANEthernetInterfaceConfig:1', 'GetStatistics')
-            fritzbox_lan_brx.add_metric([fb_serial], lanstats_result['NewBytesReceived'])
-            fritzbox_lan_btx.add_metric([fb_serial], lanstats_result['NewBytesSent'])
-            fritzbox_lan_prx.add_metric([fb_serial], lanstats_result['NewPacketsReceived'])
-            fritzbox_lan_ptx.add_metric([fb_serial], lanstats_result['NewPacketsSent'])
+                # fritzbox_lan_received_bytes
+                # fritzbox_lan_transmitted_bytes
+                # fritzbox_lan_received_packets_total
+                # fritzbox_lan_transmitted_packets_total
+                lanstats_result = connection.call_action('LANEthernetInterfaceConfig:1', 'GetStatistics')
+                fritzbox_lan_brx.add_metric([fb_serial], lanstats_result['NewBytesReceived'])
+                fritzbox_lan_btx.add_metric([fb_serial], lanstats_result['NewBytesSent'])
+                fritzbox_lan_prx.add_metric([fb_serial], lanstats_result['NewPacketsReceived'])
+                fritzbox_lan_ptx.add_metric([fb_serial], lanstats_result['NewPacketsSent'])
 
-            # fritzbox_dsl_status_enabled
-            # fritzbox_dsl_status
-            fritzbox_dslinfo_result = connection.call_action('WANDSLInterfaceConfig:1', 'GetInfo')
-            fritzbox_dsl_enable.add_metric([fb_serial], fritzbox_dslinfo_result['NewEnable'])
-            dslstatus = 1 if fritzbox_dslinfo_result['NewStatus'] == 'Up' else 0
-            fritzbox_dsl_status.add_metric([fb_serial], dslstatus)
+                # fritzbox_dsl_status_enabled
+                # fritzbox_dsl_status
+                fritzbox_dslinfo_result = connection.call_action('WANDSLInterfaceConfig:1', 'GetInfo')
+                fritzbox_dsl_enable.add_metric([fb_serial], fritzbox_dslinfo_result['NewEnable'])
+                dslstatus = 1 if fritzbox_dslinfo_result['NewStatus'] == 'Up' else 0
+                fritzbox_dsl_status.add_metric([fb_serial], dslstatus)
 
-            # fritzbox_dsl_datarate_kbps
-            fritzbox_dsl_datarate.add_metric([fb_serial, 'up', 'curr'],
-                                             fritzbox_dslinfo_result['NewUpstreamCurrRate'])
-            fritzbox_dsl_datarate.add_metric([fb_serial, 'down', 'curr'],
-                                             fritzbox_dslinfo_result['NewDownstreamCurrRate'])
-            fritzbox_dsl_datarate.add_metric([fb_serial, 'up', 'max'],
-                                             fritzbox_dslinfo_result['NewUpstreamMaxRate'])
-            fritzbox_dsl_datarate.add_metric([fb_serial, 'down', 'max'],
-                                             fritzbox_dslinfo_result['NewDownstreamMaxRate'])
+                # fritzbox_dsl_datarate_kbps
+                fritzbox_dsl_datarate.add_metric([fb_serial, 'up', 'curr'],
+                                                 fritzbox_dslinfo_result['NewUpstreamCurrRate'])
+                fritzbox_dsl_datarate.add_metric([fb_serial, 'down', 'curr'],
+                                                 fritzbox_dslinfo_result['NewDownstreamCurrRate'])
+                fritzbox_dsl_datarate.add_metric([fb_serial, 'up', 'max'],
+                                                 fritzbox_dslinfo_result['NewUpstreamMaxRate'])
+                fritzbox_dsl_datarate.add_metric([fb_serial, 'down', 'max'],
+                                                 fritzbox_dslinfo_result['NewDownstreamMaxRate'])
 
-            # fritzbox_dsl_noise_margin_dB
-            fritzbox_dsl_noisemargin.add_metric([fb_serial, 'up'],
-                                                fritzbox_dslinfo_result['NewUpstreamNoiseMargin'] / 10)
-            fritzbox_dsl_noisemargin.add_metric([fb_serial, 'down'],
-                                                fritzbox_dslinfo_result['NewDownstreamNoiseMargin'] / 10)
+                # fritzbox_dsl_noise_margin_dB
+                fritzbox_dsl_noisemargin.add_metric([fb_serial, 'up'],
+                                                    fritzbox_dslinfo_result['NewUpstreamNoiseMargin'] / 10)
+                fritzbox_dsl_noisemargin.add_metric([fb_serial, 'down'],
+                                                    fritzbox_dslinfo_result['NewDownstreamNoiseMargin'] / 10)
 
-            # fritzbox_dsl_attenuation_dB
-            fritzbox_dsl_attenuation.add_metric([fb_serial, 'up'],
-                                                fritzbox_dslinfo_result['NewUpstreamAttenuation'] / 10)
-            fritzbox_dsl_attenuation.add_metric([fb_serial, 'down'],
-                                                fritzbox_dslinfo_result['NewDownstreamAttenuation'] / 10)
+                # fritzbox_dsl_attenuation_dB
+                fritzbox_dsl_attenuation.add_metric([fb_serial, 'up'],
+                                                    fritzbox_dslinfo_result['NewUpstreamAttenuation'] / 10)
+                fritzbox_dsl_attenuation.add_metric([fb_serial, 'down'],
+                                                    fritzbox_dslinfo_result['NewDownstreamAttenuation'] / 10)
 
-            # fritzbox_ppp_connection_uptime
-            # fritzbox_ppp_conection_state
-            fritzbox_pppstatus_result = connection.call_action('WANPPPConnection:1', 'GetStatusInfo')
-            pppconnected = 1 if fritzbox_pppstatus_result['NewConnectionStatus'] == 'Connected' else 0
-            fritzbox_ppp_uptime.add_metric([fb_serial], fritzbox_pppstatus_result['NewUptime'])
-            fritzbox_ppp_connected.add_metric([fb_serial, fritzbox_pppstatus_result['NewLastConnectionError']],
-                                              pppconnected)
+                # fritzbox_ppp_connection_uptime
+                # fritzbox_ppp_conection_state
+                fritzbox_pppstatus_result = connection.call_action('WANPPPConnection:1', 'GetStatusInfo')
+                pppconnected = 1 if fritzbox_pppstatus_result['NewConnectionStatus'] == 'Connected' else 0
+                fritzbox_ppp_uptime.add_metric([fb_serial], fritzbox_pppstatus_result['NewUptime'])
+                fritzbox_ppp_connected.add_metric([fb_serial, fritzbox_pppstatus_result['NewLastConnectionError']],
+                                                  pppconnected)
 
-            # fritzbox_wan_data_bytes
-            fritzbox_wan_result = connection.call_action('WANCommonIFC1', 'GetAddonInfos')
-            wan_bytes_rx = fritzbox_wan_result['NewX_AVM_DE_TotalBytesReceived64']
-            wan_bytes_tx = fritzbox_wan_result['NewX_AVM_DE_TotalBytesSent64']
-            fritzbox_wan_data.add_metric([fb_serial, 'up'], wan_bytes_tx)
-            fritzbox_wan_data.add_metric([fb_serial, 'down'], wan_bytes_rx)
+                # fritzbox_wan_data_bytes
+                fritzbox_wan_result = connection.call_action('WANCommonIFC1', 'GetAddonInfos')
+                wan_bytes_rx = fritzbox_wan_result['NewX_AVM_DE_TotalBytesReceived64']
+                wan_bytes_tx = fritzbox_wan_result['NewX_AVM_DE_TotalBytesSent64']
+                fritzbox_wan_data.add_metric([fb_serial, 'up'], wan_bytes_tx)
+                fritzbox_wan_data.add_metric([fb_serial, 'down'], wan_bytes_rx)
 
-            # fritzbox_wan_data_packets
-            fritzbox_wan_result = connection.call_action('WANCommonInterfaceConfig:1', 'GetTotalPacketsReceived')
-            wan_packets_rx = fritzbox_wan_result['NewTotalPacketsReceived']
-            fritzbox_wan_result = connection.call_action('WANCommonInterfaceConfig:1', 'GetTotalPacketsSent')
-            wan_packets_tx = fritzbox_wan_result['NewTotalPacketsSent']
-            fritzbox_wan_packets.add_metric([fb_serial, 'up'], wan_packets_tx)
-            fritzbox_wan_packets.add_metric([fb_serial, 'down'], wan_packets_rx)
+                # fritzbox_wan_data_packets
+                fritzbox_wan_result = connection.call_action('WANCommonInterfaceConfig:1', 'GetTotalPacketsReceived')
+                wan_packets_rx = fritzbox_wan_result['NewTotalPacketsReceived']
+                fritzbox_wan_result = connection.call_action('WANCommonInterfaceConfig:1', 'GetTotalPacketsSent')
+                wan_packets_tx = fritzbox_wan_result['NewTotalPacketsSent']
+                fritzbox_wan_packets.add_metric([fb_serial, 'up'], wan_packets_tx)
+                fritzbox_wan_packets.add_metric([fb_serial, 'down'], wan_packets_rx)
+
+                # fritzbox_dsl_errors_*
+                statistics_total = connection.call_action('WANDSLInterfaceConfig1', 'X_AVM-DE_GetDSLInfo')
+                fritzbox_crc_errors.add_metric([fb_serial], statistics_total['NewCRCErrors'])
+                fritzbox_fec_errors.add_metric([fb_serial], statistics_total['NewFECErrors'])
+                # fritzbox_dsl_power_*
+                fritzbox_dsl_upstream_power.add_metric([fb_serial], statistics_total['NewUpstreamPower'])
+                fritzbox_dsl_downstream_power.add_metric([fb_serial], statistics_total['NewDownstreamPower'])
+
+            except Exception as e:
+                print("Error fetching metrics for FB " + box.host)
 
         yield fritzbox_uptime
         yield fritzbox_update
