@@ -225,6 +225,10 @@ class FritzBoxCollector(object):
         yield fritzbox_ppp_connected
         yield fritzbox_wan_data
         yield fritzbox_wan_packets
+        yield fritzbox_fec_errors
+        yield fritzbox_crc_errors
+        yield fritzbox_dsl_upstream_power
+        yield fritzbox_dsl_downstream_power
 
 
 def get_configuration():
