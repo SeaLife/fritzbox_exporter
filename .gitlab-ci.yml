@@ -4,3 +4,4 @@ include:
 variables:
   DOCKER_IMAGE_NAME: fritzbox-exporter
   DOCKER_NAMESPACE: sealife
+  IMG_BUILD_ARGS: --platform linux/amd64 --platform linux/arm64 --platform linux/arm/v7 --platform linux/arm/v6
