@@ -88,6 +88,11 @@ class FritzBoxCollector(object):
         fritzbox_dsl_status = GaugeMetricFamily('fritzbox_dsl_status', 'DSL status', labels=['Serial'])
         fritzbox_dsl_datarate = GaugeMetricFamily('fritzbox_dsl_datarate_kbps', 'DSL datarate in kbps',
                                                   labels=['Serial', 'Direction', 'Type'])
+
+        fritzbox_internet_online_monitor = GaugeMetricFamily('fritzbox_internet_online_monitor', 'Online-Monitor stats',
+                                                             labels=['Serial', 'Direction', 'SyncGroupMode',
+                                                                     'SyncGroupName'])
+
         fritzbox_dsl_noisemargin = GaugeMetricFamily('fritzbox_dsl_noise_margin_dB', 'Noise Margin in dB',
                                                      labels=['Serial', 'Direction'])
         fritzbox_dsl_attenuation = GaugeMetricFamily('fritzbox_dsl_attenuation_dB', 'Line attenuation in dB',
@@ -104,8 +109,10 @@ class FritzBoxCollector(object):
         fritzbox_fec_errors = GaugeMetricFamily('fritzbox_dsl_errors_fec', 'FEC errors', labels=['Serial'])
         fritzbox_crc_errors = GaugeMetricFamily('fritzbox_dsl_errors_crc', 'CRC Errors', labels=['Serial'])
 
-        fritzbox_dsl_upstream_power = GaugeMetricFamily('fritzbox_dsl_power_upstream', 'Upstream Power', labels=['Serial'])
-        fritzbox_dsl_downstream_power = GaugeMetricFamily('fritzbox_dsl_power_downstream', 'Downstream Power', labels=['Serial'])
+        fritzbox_dsl_upstream_power = GaugeMetricFamily('fritzbox_dsl_power_upstream', 'Upstream Power',
+                                                        labels=['Serial'])
+        fritzbox_dsl_downstream_power = GaugeMetricFamily('fritzbox_dsl_power_downstream', 'Downstream Power',
+                                                          labels=['Serial'])
 
         for box in self.boxes:
             try:
@@ -161,6 +168,13 @@ class FritzBoxCollector(object):
                                                  fritzbox_dslinfo_result['NewUpstreamMaxRate'])
                 fritzbox_dsl_datarate.add_metric([fb_serial, 'down', 'max'],
                                                  fritzbox_dslinfo_result['NewDownstreamMaxRate'])
+
+                # fritzbox_internet_online_monitor
+                online_monitor = connection.call_action('WANCommonInterfaceConfig', 'X_AVM-DE_GetOnlineMonitor',
+                                                arguments={"NewSyncGroupIndex": 0})
+
+                fritzbox_internet_online_monitor.add_metric([fb_serial, 'up', online_monitor['NewSyncGroupMode'], online_monitor['NewSyncGroupName']], online_monitor['Newmax_us'])
+                fritzbox_internet_online_monitor.add_metric([fb_serial, 'down', online_monitor['NewSyncGroupMode'], online_monitor['NewSyncGroupName']], online_monitor['Newmax_ds'])
 
                 # fritzbox_dsl_noise_margin_dB
                 fritzbox_dsl_noisemargin.add_metric([fb_serial, 'up'],
@@ -219,6 +233,7 @@ class FritzBoxCollector(object):
         yield fritzbox_dsl_enable
         yield fritzbox_dsl_status
         yield fritzbox_dsl_datarate
+        yield fritzbox_internet_online_monitor
         yield fritzbox_dsl_noisemargin
         yield fritzbox_dsl_attenuation
         yield fritzbox_ppp_uptime
@@ -253,7 +268,6 @@ def get_configuration():
 
 
 if __name__ == '__main__':
-
     REGISTRY.register(FritzBoxCollector('settings.json'))
 
     # Start up the server to expose the metrics.
