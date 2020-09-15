@@ -173,8 +173,8 @@ class FritzBoxCollector(object):
                 online_monitor = connection.call_action('WANCommonInterfaceConfig', 'X_AVM-DE_GetOnlineMonitor',
                                                 arguments={"NewSyncGroupIndex": 0})
 
-                fritzbox_internet_online_monitor.add_metric([fb_serial, 'up', online_monitor['NewSyncGroupMode'], online_monitor['NewSyncGroupName']], online_monitor['Newmax_us'])
-                fritzbox_internet_online_monitor.add_metric([fb_serial, 'down', online_monitor['NewSyncGroupMode'], online_monitor['NewSyncGroupName']], online_monitor['Newmax_ds'])
+                fritzbox_internet_online_monitor.add_metric([fb_serial, 'up', online_monitor['NewSyncGroupMode'], online_monitor['NewSyncGroupName']], online_monitor['Newmax_us'] * 8)
+                fritzbox_internet_online_monitor.add_metric([fb_serial, 'down', online_monitor['NewSyncGroupMode'], online_monitor['NewSyncGroupName']], online_monitor['Newmax_ds'] * 8)
 
                 # fritzbox_dsl_noise_margin_dB
                 fritzbox_dsl_noisemargin.add_metric([fb_serial, 'up'],
