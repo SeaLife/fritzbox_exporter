@@ -1,5 +1,9 @@
 # Fritz!Box exporter for prometheus
 
+![Gitlab pipeline status (self-hosted)](https://img.shields.io/gitlab/pipeline/SeaLife-Docker/fritzbox_exporter/master?gitlab_url=https%3A%2F%2Fgit.r3ktm8.de&style=flat-square)
+![Docker Image Version (latest semver)](https://img.shields.io/docker/v/sealife/fritzbox-exporter?sort=semver&style=flat-square&label=docker%20release)
+![GitHub release (latest by date including pre-releases)](https://img.shields.io/github/v/release/sealife/fritzbox_exporter?include_prereleases&label=software%20release&style=flat-square)
+
 Simple and straight forward exporter for AVM Fritz!Box metrics. As of now this has tons of assumptions behind it, so it may or may not work against your Fritz!Box. It has been tested against an AVM Fritz!Box 7590 (DSL). If you have another box and data is missing, please file an issue or PR on GitHub.
 
 ## Building and running
